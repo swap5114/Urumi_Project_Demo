@@ -1,0 +1,9 @@
+# Production-like VPS (k3s). Replace the registry and the domain.
+# The image comes from a registry you push to. siteUrl must be the store's real HTTPS address (the same host as
+# `ingress.host` in charts/store/values-prod.yaml), otherwise WooCommerce rejects the OAuth signature.
+image:
+  repository: registry.example.com/urumi/woocommerce-mcp
+  pullPolicy: IfNotPresent
+
+woocommerce:
+  siteUrl: https://store.example.com

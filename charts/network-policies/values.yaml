@@ -1,0 +1,23 @@
+# Pods are selected by their "app" label. These values only describe things OUTSIDE this namespace.
+
+# The Ingress controller (Traefik on k3s) lives in another namespace and sends user traffic to our pods.
+ingressController:
+  namespace: kube-system
+  podLabels:
+    app.kubernetes.io/name: traefik
+
+# Every pod needs DNS, or no Service name resolves.
+dns:
+  namespace: kube-system
+  podLabels:
+    k8s-app: kube-dns
+
+# Pods that must reach the internet (the LLM API, WordPress and plugin downloads, external MCP servers) may go
+# anywhere EXCEPT private ranges: other pods, the Kubernetes API, the node, and cloud metadata (169.254.0.0/16).
+internetEgress:
+  ports: [80, 443]
+  exceptCidrs:
+    - 10.0.0.0/8
+    - 172.16.0.0/12
+    - 192.168.0.0/16
+    - 169.254.0.0/16

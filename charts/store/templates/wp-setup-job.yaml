@@ -1,0 +1,85 @@
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: wp-setup
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        app: wp-setup
+    spec:
+      restartPolicy: Never
+      securityContext:
+        runAsUser: 33
+      containers:
+        - name: wp-cli
+          image: {{ .Values.images.wpcli }}
+          workingDir: /var/www/html
+          command: ["sh", "/scripts/setup.sh"]
+          env:
+            - name: SAMPLE_PRODUCT_NAME
+              value: {{ .Values.store.sampleProduct.name | quote }}
+            - name: SAMPLE_PRODUCT_SKU
+              value: {{ .Values.store.sampleProduct.sku | quote }}
+            - name: SAMPLE_PRODUCT_PRICE
+              value: {{ .Values.store.sampleProduct.price | quote }}
+            - name: WOOCOMMERCE_VERSION
+              value: {{ .Values.woocommerce.version | quote }}
+            - name: WORDPRESS_DB_HOST
+              value: mariadb
+            - name: WORDPRESS_DB_NAME
+              value: store
+            - name: WORDPRESS_DB_USER
+              value: storeuser
+            - name: WORDPRESS_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mariadb-credentials
+                  key: password
+
+            - name: ADMIN_USER
+              valueFrom:
+                secretKeyRef:
+                  name: wordpress-admin
+                  key: username
+            - name: ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: wordpress-admin
+                  key: password
+            - name: ADMIN_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: wordpress-admin
+                  key: email
+
+            - name: SITE_URL
+              value: "{{ .Values.ingress.scheme }}://{{ .Values.ingress.host }}"
+            - name: HOME
+              value: /tmp
+            - name: WP_CLI_CACHE_DIR
+              value: /tmp/wp-cli-cache
+
+          # A Job runs to completion, so it has no liveness/readiness probes; limits stop a runaway install.
+          resources:
+            {{- toYaml .Values.resources.wpSetup | nindent 12 }}
+
+          volumeMounts:
+            - name: wordpress-data
+              mountPath: /var/www/html
+            - name: setup-script
+              mountPath: /scripts
+              readOnly: true
+
+      volumes:
+        - name: wordpress-data
+          persistentVolumeClaim:
+            claimName: wordpress-data
+        - name: setup-script
+          configMap:
+            name: wp-setup-script

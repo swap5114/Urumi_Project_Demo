@@ -1,0 +1,7 @@
+# Production-like VPS (k3s): the same defaults as local. k3s ships Traefik and CoreDNS in kube-system.
+# On another distribution, change the namespace and labels of the Ingress controller and of DNS here
+# (a wrong selector makes the policies block the Ingress controller or DNS, so run scripts/netpol-check.sh).
+ingressController:
+  namespace: kube-system
+  podLabels:
+    app.kubernetes.io/name: traefik

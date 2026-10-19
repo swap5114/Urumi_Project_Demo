@@ -1,0 +1,20 @@
+# Defaults shared by every environment. values-local.yaml and values-prod.yaml override only what differs.
+
+image:
+  repository: dashboard
+  tag: "0.1.0"
+  pullPolicy: IfNotPresent
+
+# The dashboard serves "/" on the SAME host as the gateway (which serves /api and /mcp), so the browser sees one
+# origin and no CORS is needed. Keep this host identical to the one in charts/gateway.
+ingress:
+  host: app.localhost
+  className: traefik
+  annotations: {}         # e.g. cert-manager.io/cluster-issuer: letsencrypt
+  tls:
+    enabled: false
+    secretName: app-tls
+
+resources:
+  requests: { cpu: 20m, memory: 32Mi }
+  limits: { cpu: 200m, memory: 64Mi }

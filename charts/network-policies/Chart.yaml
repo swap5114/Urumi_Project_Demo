@@ -1,0 +1,6 @@
+apiVersion: v2
+name: network-policies
+description: Default-deny NetworkPolicies and the explicit allow rules for the Urumi MCP gateway namespace
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

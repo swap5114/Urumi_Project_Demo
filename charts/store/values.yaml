@@ -1,0 +1,42 @@
+# Defaults shared by every environment. values-local.yaml and values-prod.yaml override only what differs.
+# No secret ever goes in a values file: passwords live in Kubernetes Secrets (see scripts/create-secrets.sh).
+
+ingress:
+  host: store.localhost
+  className: traefik
+  scheme: http            # becomes https when tls.enabled is true
+  annotations: {}         # e.g. cert-manager.io/cluster-issuer: letsencrypt
+  tls:
+    enabled: false
+    secretName: store-tls
+
+woocommerce:
+  version: "10.7.0"
+
+store:
+  sampleProduct:
+    name: "Sample T-Shirt"
+    sku: "sample-tshirt-001"
+    price: "499.00"
+
+images:
+  mariadb: mariadb:11.8.9
+  wordpress: wordpress:6.8.3-apache
+  wpcli: wordpress:cli-2.12.0-php8.3
+
+persistence:
+  storageClass: ""        # "" = the cluster default (local-path on k3s / k3d)
+  mariadbSize: 2Gi
+  wordpressSize: 2Gi
+
+# requests = what the scheduler reserves; limits = the hard ceiling (memory over the limit = OOMKilled).
+resources:
+  mariadb:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { cpu: 500m, memory: 512Mi }
+  wordpress:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { cpu: 500m, memory: 768Mi }
+  wpSetup:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits: { cpu: 500m, memory: 512Mi }

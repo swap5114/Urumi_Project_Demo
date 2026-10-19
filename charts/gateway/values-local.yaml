@@ -1,0 +1,5 @@
+# Local k3d cluster: plain HTTP on *.localhost. The image is built locally and imported with `k3d image import`.
+ingress:
+  host: app.localhost
+  tls:
+    enabled: false

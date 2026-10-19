@@ -1,0 +1,24 @@
+# Production-like VPS (k3s). The image comes from a registry you push to; replace the repository and the domain.
+image:
+  repository: registry.example.com/urumi/gateway
+  pullPolicy: IfNotPresent
+
+# The dashboard and the gateway share ONE host and ONE certificate. Only the dashboard's Ingress asks cert-manager
+# for it (see charts/dashboard/values-prod.yaml); this Ingress just uses the same TLS Secret.
+ingress:
+  host: app.example.com
+  annotations: {}
+  tls:
+    enabled: true
+    secretName: app-tls
+
+persistence:
+  storageClass: ""
+  size: 5Gi
+
+gateway:
+  bootstrapAdminEmail: admin@example.com
+
+resources:
+  requests: { cpu: 100m, memory: 256Mi }
+  limits: { cpu: 1000m, memory: 512Mi }

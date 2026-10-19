@@ -1,0 +1,4 @@
+.env
+gateway.db*
+node_modules/
+dist/

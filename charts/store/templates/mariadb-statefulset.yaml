@@ -1,0 +1,86 @@
+# Remember: Labels identify Pods; selectors find matching Pods.
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mariadb
+spec:
+  serviceName: mariadb    # Important wues: why did we not use headless-service [clusterIP:NONE]
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: mariadb
+
+  template:
+    metadata:
+      labels:
+        app: mariadb
+    spec:
+      containers:
+        - name: mariadb
+          image: {{ .Values.images.mariadb }}
+          ports:
+            - name: mysql
+              containerPort: 3306
+
+          env:
+            - name: MARIADB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mariadb-credentials
+                  key: root-password
+
+            - name: MARIADB_DATABASE
+              value: store
+
+            - name: MARIADB_USER
+              value: storeuser
+
+            - name: MARIADB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mariadb-credentials
+                  key: password
+
+          # startupProbe: first boot initialises the data directory, which can take a while.
+          # Until it succeeds, liveness and readiness are paused, so the pod is not killed mid-init.
+          startupProbe:
+            tcpSocket:
+              port: mysql
+            periodSeconds: 5
+            failureThreshold: 30     # up to 150 s
+          # readiness: only send traffic (the wordpress Service) to a pod that accepts connections.
+          readinessProbe:
+            tcpSocket:
+              port: mysql
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          # liveness: restart the container if it stops accepting connections.
+          livenessProbe:
+            tcpSocket:
+              port: mysql
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+          resources:
+            {{- toYaml .Values.resources.mariadb | nindent 12 }}
+
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/mysql
+
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        {{- with .Values.persistence.storageClass }}
+        storageClassName: {{ . | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.mariadbSize }}

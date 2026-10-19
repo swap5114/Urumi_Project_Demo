@@ -1,0 +1,12 @@
+node_modules/
+dist/
+scratch/
+.env
+gateway.db*
+*.log
+get_helm.sh
+INTERVIEW_PREP.md
+STUDY_GUIDE.md
+Urumi AI FDE Internship - Round 1_ MCP Gateway on Kubernetes - Google Docs.pdf
+docs/archive/
+docs/architecture

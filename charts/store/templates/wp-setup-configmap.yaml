@@ -1,0 +1,73 @@
+    
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wp-setup-script
+data:
+  setup.sh: |
+    #!/bin/sh
+    set -eu
+
+    cd /var/www/html
+
+    echo "Waiting for wp-config.php..."
+    until [ -f wp-config.php ]; do
+      sleep 3
+    done
+
+    echo "Waiting for database..."
+    until wp db query 'SELECT 1' >/dev/null 2>&1; do
+      sleep 3
+    done
+
+    echo "Checking WordPress installation..."
+    if ! wp core is-installed; then
+      echo "Installing WordPress..."
+      wp core install \
+        --url="$SITE_URL" \
+        --title="Store" \
+        --admin_user="$ADMIN_USER" \
+        --admin_password="$ADMIN_PASSWORD" \
+        --admin_email="$ADMIN_EMAIL" \
+        --skip-email
+    else
+      echo "WordPress is already installed."
+    fi
+
+    echo "Checking WooCommerce plugin..."
+    if ! wp plugin is-installed woocommerce; then
+      echo "Installing WooCommerce $WOOCOMMERCE_VERSION..."
+      wp plugin install woocommerce --version="$WOOCOMMERCE_VERSION"
+    else
+      echo "WooCommerce is already installed."
+    fi
+
+    if ! wp plugin is-active woocommerce; then
+      wp plugin activate woocommerce
+    fi
+
+    echo "Configuring permalinks..."
+    wp rewrite structure '/%postname%/'
+
+    echo "Disabling Coming Soon mode..."
+    wp option update woocommerce_coming_soon no
+
+    echo "Enabling Cash on Delivery..."
+    wp wc payment_gateway update cod --enabled=true --user="$ADMIN_USER"
+
+    echo "Checking sample product..."
+    PRODUCT_ID=$(wp wc product list --sku="$SAMPLE_PRODUCT_SKU" --user="$ADMIN_USER" --field=id)
+
+    if [ -z "$PRODUCT_ID" ]; then
+      echo "Creating sample product..."
+      wp wc product create \
+        --name="$SAMPLE_PRODUCT_NAME" \
+        --type=simple \
+        --regular_price="$SAMPLE_PRODUCT_PRICE" \
+        --sku="$SAMPLE_PRODUCT_SKU" \
+        --user="$ADMIN_USER"
+    else
+      echo "Sample product already exists: $PRODUCT_ID"
+    fi
+
+    echo "setup done"

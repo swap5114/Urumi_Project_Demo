@@ -1,0 +1,23 @@
+# Production-like VPS (k3s). Replace store.example.com with your real domain (an A record pointing to the VPS).
+# TLS expects cert-manager with a ClusterIssuer named "letsencrypt" already installed.
+ingress:
+  host: store.example.com
+  scheme: https
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+  tls:
+    enabled: true
+    secretName: store-tls
+
+persistence:
+  storageClass: ""        # k3s default is local-path; set e.g. "longhorn" if you run a real storage class
+  mariadbSize: 10Gi
+  wordpressSize: 10Gi
+
+resources:
+  mariadb:
+    requests: { cpu: 250m, memory: 512Mi }
+    limits: { cpu: 1000m, memory: 1Gi }
+  wordpress:
+    requests: { cpu: 250m, memory: 512Mi }
+    limits: { cpu: 1000m, memory: 1Gi }

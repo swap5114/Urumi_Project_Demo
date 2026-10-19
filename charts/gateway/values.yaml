@@ -1,0 +1,53 @@
+# Defaults shared by every environment. values-local.yaml and values-prod.yaml override only what differs.
+# No secret goes in a values file: the gateway reads its secrets from the Kubernetes Secret named below.
+
+image:
+  repository: gateway
+  tag: "0.1.3"
+  pullPolicy: IfNotPresent
+
+# Chat agent. Any OpenAI-compatible provider works; changing provider means changing these values and the key.
+# The API key is NOT here: it is the key "llm-api-key" in the gateway Secret (scripts/set-llm-key.sh).
+# Without that key the gateway still runs and /api/chat answers 503.
+llm:
+  baseUrl: https://generativelanguage.googleapis.com/v1beta/openai
+  model: gemini-3.5-flash-lite
+  timeoutMs: 30000
+
+ingress:
+  host: app.localhost
+  className: traefik
+  annotations: {}         # e.g. cert-manager.io/cluster-issuer: letsencrypt
+  tls:
+    enabled: false
+    secretName: gateway-tls
+
+persistence:
+  storageClass: ""        # "" = the cluster default
+  size: 1Gi
+
+gateway:
+  # Secret with keys: enc-key (encrypts upstream credentials) and bootstrap-admin-key (the first admin's API key).
+  secretName: gateway-secrets
+  bootstrapAdminEmail: admin@example.com
+  # Deadlines for one upstream: tools/list is asked of every server on every list, a call may legitimately take longer.
+  listTimeoutMs: 3000
+  callTimeoutMs: 15000
+  # Private hosts an admin may register. Keep this list as short as possible (SSRF protection).
+  allowedInternalHosts:
+    - woocommerce-mcp
+    - mcp-fx
+    - mcp-notes
+  # Registered once, on the very first start of a new database. No credentials here, only slug and url.
+  # On an existing database add servers in the dashboard (Servers, Add server) instead.
+  seedServers:
+    - slug: woo
+      url: http://woocommerce-mcp/mcp
+    - slug: fx
+      url: http://mcp-fx/mcp
+    - slug: notes
+      url: http://mcp-notes/mcp
+
+resources:
+  requests: { cpu: 50m, memory: 128Mi }
+  limits: { cpu: 500m, memory: 256Mi }

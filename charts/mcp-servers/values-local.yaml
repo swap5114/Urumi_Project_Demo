@@ -1,0 +1,4 @@
+# Local k3d cluster. The image is built locally and imported with `k3d image import`.
+image:
+  repository: mcp-servers
+  pullPolicy: IfNotPresent

@@ -1,0 +1,17 @@
+image:
+  repository: woocommerce-mcp
+  tag: "0.1.2"
+  pullPolicy: IfNotPresent
+
+woocommerce:
+  baseUrl: http://wordpress
+  secretName: woocommerce-api-keys
+  siteUrl: http://store.localhost
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi

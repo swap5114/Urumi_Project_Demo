@@ -1,0 +1,16 @@
+image:
+  repository: mcp-servers
+  tag: "0.1.0"
+  pullPolicy: IfNotPresent
+
+# One Deployment and one Service per entry. The Service is named "mcp-<name>" and listens on port 80.
+# "server" chooses which MCP server the image runs (MCP_SERVER). Register http://mcp-<name>/mcp in the gateway.
+servers:
+  - name: fx
+    server: fx
+  - name: notes
+    server: notes
+
+resources:
+  requests: { cpu: 20m, memory: 48Mi }
+  limits: { cpu: 200m, memory: 128Mi }

@@ -1,0 +1,4 @@
+# Production-like VPS (k3s). The image comes from a registry you push to; replace the repository.
+image:
+  repository: registry.example.com/urumi/mcp-servers
+  pullPolicy: IfNotPresent

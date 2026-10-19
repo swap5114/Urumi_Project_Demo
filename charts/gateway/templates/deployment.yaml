@@ -1,0 +1,113 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway
+  labels:
+    app: gateway
+spec:
+  replicas: 1
+  # SQLite lives on a ReadWriteOnce volume: two pods must never run at the same time.
+  # RollingUpdate would start the new pod before the old one stops, so we stop first, then start.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: gateway
+  template:
+    metadata:
+      labels:
+        app: gateway
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000            # makes the mounted volume writable for uid 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: gateway
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: HOST
+              value: "0.0.0.0"
+            - name: PORT
+              value: "8080"
+            - name: DB_PATH
+              value: /data/gateway.db
+            - name: LIST_TIMEOUT_MS
+              value: {{ .Values.gateway.listTimeoutMs | quote }}
+            - name: CALL_TIMEOUT_MS
+              value: {{ .Values.gateway.callTimeoutMs | quote }}
+            - name: ALLOWED_INTERNAL_HOSTS
+              value: {{ join "," .Values.gateway.allowedInternalHosts | quote }}
+            - name: SEED_SERVERS
+              value: {{ .Values.gateway.seedServers | toJson | quote }}
+            - name: BOOTSTRAP_ADMIN_EMAIL
+              value: {{ .Values.gateway.bootstrapAdminEmail | quote }}
+            - name: BOOTSTRAP_ADMIN_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.gateway.secretName | quote }}
+                  key: bootstrap-admin-key
+            - name: GATEWAY_ENC_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.gateway.secretName | quote }}
+                  key: enc-key
+            - name: LLM_BASE_URL
+              value: {{ .Values.llm.baseUrl | quote }}
+            - name: LLM_MODEL
+              value: {{ .Values.llm.model | quote }}
+            - name: LLM_TIMEOUT_MS
+              value: {{ .Values.llm.timeoutMs | quote }}
+            - name: LLM_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.gateway.secretName | quote }}
+                  key: llm-api-key
+                  optional: true   # the pod starts without it; chat is then disabled
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 3
+            failureThreshold: 20
+          # readiness: also checks that the database answers, so no traffic reaches a gateway that cannot work.
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          # liveness: only "is the process alive", never an upstream or the database.
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: gateway-data
+        - name: tmp
+          emptyDir: {}

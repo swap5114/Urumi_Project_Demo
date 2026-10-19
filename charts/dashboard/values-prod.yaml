@@ -1,0 +1,14 @@
+# Production-like VPS (k3s). The image comes from a registry you push to; replace the repository and the domain.
+# This chart owns the certificate for the shared host: its Ingress carries the cert-manager annotation, and the
+# gateway's Ingress reuses the same TLS Secret (app-tls). Two Ingresses must not both request the same certificate.
+image:
+  repository: registry.example.com/urumi/dashboard
+  pullPolicy: IfNotPresent
+
+ingress:
+  host: app.example.com
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+  tls:
+    enabled: true
+    secretName: app-tls

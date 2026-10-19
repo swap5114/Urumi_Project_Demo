@@ -1,0 +1,64 @@
+{{- range .Values.servers }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-{{ .name }}
+  labels:
+    app: mcp-{{ .name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mcp-{{ .name }}
+  template:
+    metadata:
+      labels:
+        app: mcp-{{ .name }}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000          # the "node" user of the image
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: mcp
+          image: "{{ $.Values.image.repository }}:{{ $.Values.image.tag }}"
+          imagePullPolicy: {{ $.Values.image.pullPolicy | quote }}
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          env:
+            - name: MCP_SERVER
+              value: {{ .server | quote }}
+          # /healthz never touches anything else, so a problem elsewhere cannot restart this pod.
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+          resources:
+            {{- toYaml $.Values.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+{{- end }}

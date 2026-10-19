@@ -1,0 +1,8 @@
+# Local k3d cluster. The image is built locally and imported with `k3d image import`.
+# The OAuth 1.0a signature is computed for the store's PUBLIC address, so it must match the store's site URL.
+image:
+  repository: woocommerce-mcp
+  pullPolicy: IfNotPresent
+
+woocommerce:
+  siteUrl: http://store.localhost

@@ -1,0 +1,6 @@
+# Local k3d (k3s): the Ingress controller is Traefik in kube-system and CoreDNS is kube-dns in kube-system.
+# These are the chart defaults, repeated here so local and prod are explicit.
+ingressController:
+  namespace: kube-system
+  podLabels:
+    app.kubernetes.io/name: traefik

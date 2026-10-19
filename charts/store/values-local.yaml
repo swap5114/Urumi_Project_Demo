@@ -1,0 +1,6 @@
+# Local k3d cluster: everything stays on 127.0.0.1, plain HTTP, default storage class.
+ingress:
+  host: store.localhost
+  scheme: http
+  tls:
+    enabled: false
